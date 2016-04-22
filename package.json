@@ -1,0 +1,10 @@
+{
+  "name": "sc-api",
+  "main": "server.js",
+  "dependencies": {
+    "body-parser": "~1.0.1",
+    "express": "~4.0.0",
+    "python-shell": "0.4.0",
+    "shelljs": "^0.6.0"
+  }
+}

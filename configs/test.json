@@ -1,0 +1,5 @@
+{
+    "filteredAuthors": ["Alex Kuhrt", "Anton Stepan"],
+    "fileTypes": ["yml", "json", "js"],
+    "filteredPaths": ["node_modules"]
+}
