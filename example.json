@@ -1,0 +1,17 @@
+{
+    "filteredAuthors": [
+        "Peter Petting"
+    ],
+    "fileTypes": [
+        "yml",
+        "js",
+        "php",
+        "twig",
+        "less"
+    ],
+    "filteredPaths": [
+        "node_modules"
+    ],
+    "gitinspectorPath": "path_to_gitinspector",
+    "projectPath": "path_to_project"
+}

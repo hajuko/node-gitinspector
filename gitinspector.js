@@ -2,10 +2,11 @@ var PythonShell = require('python-shell');
 
 function run(parameters, serverResponse) {
     var options = {
-        scriptPath: '/Users/julien/Documents/gitinspector',
+        scriptPath: parameters.gitinspectorPath,
         args : [
-            '/Users/julien/Documents/sc-api/',
-            '--format=json'
+            parameters.projectPath,
+            '--format=json',
+            '--since=2016-04-01'
         ]
     };
 
