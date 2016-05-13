@@ -14,11 +14,13 @@ function run(parameters, serverResponse) {
     appendAllowedFileTypes(options, parameters);
     appendPathFilter(options, parameters);
 
-    PythonShell.run('gitinspector.py', options, function (err, result) {
+    PythonShell.run('gitinspector.py', options, function (err, gitData) {
         if (err) {
             throw err;
         }
-        result = JSON.parse(result.join(''));
+        var result = JSON.parse(gitData.join(''));
+
+        result.parameters = parameters;
 
         serverResponse.send(result);
     });
