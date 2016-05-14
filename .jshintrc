@@ -23,7 +23,9 @@
         "d3": true,
         "define": true,
         "L": true,
-        "got": true
+        "got": true,
+        "_": true,
+        "d3plus": true
     }
 }
 

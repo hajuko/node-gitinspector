@@ -4,9 +4,19 @@ var port = 1337;
 var gitinspector = require('./gitinspector');
 
 
-app.get('/stats', function (req, res) {
+app.get('/single', function (req, res) {
     var projectConfig = req.param('project');
     var parameters = require('./projects/' + projectConfig + '.json');
+    var fileTypes = req.param('fileTypes');
+    parameters.since = req.param('since');
+    parameters.until = req.param('until');
+
+    if (fileTypes) {
+        parameters.fileTypes = fileTypes;
+    }
+
+    console.log(parameters);
+
     gitinspector.run(parameters, res);
 });
 

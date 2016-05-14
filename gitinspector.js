@@ -5,14 +5,21 @@ function run(parameters, serverResponse) {
         scriptPath: parameters.gitinspectorPath,
         args : [
             parameters.projectPath,
-            '--format=json',
-            '--since=2016-04-01'
+            '--format=json'
         ]
     };
 
     appendAuthorFilter(options, parameters);
     appendAllowedFileTypes(options, parameters);
     appendPathFilter(options, parameters);
+
+    if (parameters.since) {
+        options.args.push('--since=' + parameters.since);
+    }
+
+    if (parameters.until) {
+        options.args.push('--until=' + parameters.until);
+    }
 
     PythonShell.run('gitinspector.py', options, function (err, gitData) {
         if (err) {
@@ -43,7 +50,7 @@ function appendAllowedFileTypes(options, parameters) {
         return;
     }
 
-    options.args.push('--file-types=' + parameters.fileTypes.join(','));
+    options.args.push('--file-types=' + parameters.fileTypes);
 }
 
 exports.run = run;
