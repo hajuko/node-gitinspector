@@ -2,8 +2,8 @@ var nodeGitInspector;
 
 $(function() {
     nodeGitInspector = new NodeGitInspector();
-    //nodeGitInspector.loadIntervalData('portal', '', '2016-01-01', '2016-02-01');
-    nodeGitInspector.loadSingleData('portal', '', '2016-01-01', '2016-01-15', nodeGitInspector.drawPie)
+    nodeGitInspector.loadIntervalData('core', '', '2016-01-01', '2016-05-01');
+    //nodeGitInspector.loadSingleData('portal', '', '2016-01-01', '2016-01-15', nodeGitInspector.drawPie)
 
     //$('#update').on('click', function() {
     //    nodeGitInspector.loadSingleData('seatmap', 'html,js', '2016-01-01');
@@ -52,26 +52,62 @@ function NodeGitInspector() {
             .draw();
     }
 
+    function gatherAuthors(intervals, path) {
+        var _authors = {};
+        intervals.forEach(function(interval) {
+            var authors = interval.gitinspector[path].authors;
+
+            authors.forEach(function(author) {
+                _authors[author.name] = author.name;
+            })
+        });
+
+        return _authors;
+    }
+
     function drawStacked(intervals) {
         if (intervals.length === 0) {
             return renderFailed();
         }
 
+        console.log('number of months: ' + intervals.length);
+
         renderHtml(intervals[0].gitinspector.repository);
-        console.log(intervals);
         var chartData = [];
+        var authors = gatherAuthors(intervals, 'changes');
+
+        console.log(authors);
 
         intervals.forEach(function(interval) {
             var changes = interval.gitinspector.changes.authors;
 
-            changes.forEach(function(author) {
+            loop1:
+            for (var i = 0, len = Object.keys(authors).length; i < len; i++) {
+                var authorName = authors[Object.keys(authors)[i]];
+
+                for (var j = 0, len2 = changes.length; j < len2; j++) {
+                    var author = changes[j];
+
+                    if (author.name == authorName) {
+                        chartData.push({
+                            name: authorName,
+                            value: author.insertions,
+                            month: interval.date
+                        });
+
+                        continue loop1;
+                    }
+                }
+
                 chartData.push({
-                    name: author.name,
-                    value: author.insertions,
+                    name: authorName,
+                    value: 0,
                     month: interval.date
                 });
-            })
+            }
         });
+
+        console.log(chartData);
 
         d3plus.viz()
             .container("#stacked")
@@ -81,7 +117,7 @@ function NodeGitInspector() {
             .text("name")
             .y("value")
             .x("month")
-            .time("month")
+            .time("MonthSmall")
             .draw();
     }
 
@@ -91,6 +127,7 @@ function NodeGitInspector() {
             '&fileTypes=' + fileTypes +
             '&since=' + since +
             '&until=' + until,
+            timeout: 0,
             cache: false,
             success: sucessFn,
             error: function(data) {
@@ -108,10 +145,13 @@ function NodeGitInspector() {
             cache: false,
             success: function(data) {
                 if (data.gitinspector.exception) {
+                    console.log('failed: ' + end);
+
                     return gatherer.failed();
                 }
 
-                data.date = start;
+                console.log('success: ' + end);
+
                 gatherer.addData(data);
             },
             error: function() {
@@ -130,12 +170,13 @@ function NodeGitInspector() {
             currentDate.startOf('month');
 
             intervals.push({
-                start: currentDate.format(),
-                end: currentDate.endOf('month').format()
+                start: currentDate.format('YYYY-MM-DD'),
+                end: currentDate.endOf('month').format('YYYY-MM-DD')
             });
 
             currentDate.add(1, 'd');
         }
+        console.log('intervals: ' + intervals.length);
 
         var dataGatherer = new DataGatherer(intervals.length, drawStacked);
 
@@ -155,8 +196,6 @@ function DataGatherer(numberOfIntervals, sucessFn) {
     this.addData = function(data) {
         intervalls.push(data);
         numberOfIntervals--;
-
-        console.log(numberOfIntervals);
 
         if (numberOfIntervals == 0) {
             sucessFn(intervalls);

@@ -1,23 +1,22 @@
 var express = require('express');
 var app = express();
 var port = 1337;
-var gitinspector = require('./gitinspector');
+var Gitinspector = require('./gitinspector');
 
 
 app.get('/single', function (req, res) {
-    var projectConfig = req.param('project');
-    var parameters = require('./projects/' + projectConfig + '.json');
-    var fileTypes = req.param('fileTypes');
+    const projectConfig = req.param('project');
+    const parameters = require('./projects/' + projectConfig + '.json');
+    const fileTypes = req.param('fileTypes');
     parameters.since = req.param('since');
     parameters.until = req.param('until');
+    parameters.projectName = projectConfig;
 
     if (fileTypes) {
         parameters.fileTypes = fileTypes;
     }
-
-    console.log(parameters);
-
-    gitinspector.run(parameters, res);
+    const gitinspector = new Gitinspector.create(parameters, res);
+    gitinspector.run();
 });
 
 app.get('/web/js/main.js', function(req, res) {
