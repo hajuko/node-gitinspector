@@ -13,14 +13,14 @@
     <script src="/web/js/main.js"></script>
 
     <script type="text/template" id="page-content">
-        <h1>
-            <%= headline %>
-        </h1>
-
+        <h4>Insertions</h4>
         <div id="stacked"></div>
 
-        <h4>Number of Lines inserted</h4>
-        <div class="pie-chart" id="pie-chart-insertions"></div>
+        <h4>Deletions</h4>
+        <div id="stacked2"></div>
+
+        <h4>Insertions + Deletions</h4>
+        <div id="stacked3"></div>
     </script>
 
     <script type="text/template" id="page-content-failed">
@@ -35,6 +35,7 @@
 </head>
 <body>
 <button id="update">update</button>
+<input id="authorfilter">
 <div id="graph-container"></div>
 </body>
 </html>

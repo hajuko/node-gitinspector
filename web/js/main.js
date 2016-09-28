@@ -1,13 +1,19 @@
 var nodeGitInspector;
+var project = 'portal';
 
 $(function() {
-    nodeGitInspector = new NodeGitInspector();
-    nodeGitInspector.loadIntervalData('core', '', '2016-01-01', '2016-05-01');
-    //nodeGitInspector.loadSingleData('portal', '', '2016-01-01', '2016-01-15', nodeGitInspector.drawPie)
 
-    //$('#update').on('click', function() {
-    //    nodeGitInspector.loadSingleData('seatmap', 'html,js', '2016-01-01');
-    //})
+    $('#update').click(function() {
+        $.ajax({
+            url: '/delete?project=' + project
+        });
+
+        nodeGitInspector = new NodeGitInspector();
+        nodeGitInspector.loadIntervalData(project, '', '2016-01-01', '2016-09-01');
+    });
+
+    nodeGitInspector = new NodeGitInspector();
+    nodeGitInspector.loadIntervalData(project, '', '2016-01-01', '2016-09-01', '');
 });
 
 function NodeGitInspector() {
@@ -29,27 +35,6 @@ function NodeGitInspector() {
         };
 
         $('#graph-container').html(_.template(contentTemplate)(templateOptions));
-    }
-
-    function drawPie(data) {
-        renderHtml(data.gitinspector.repository);
-        var changes = data.gitinspector.changes.authors;
-        var chartData = changes.map(function(author) {
-            return {
-                name: author.name,
-                value: author.insertions
-            };
-        });
-
-        console.log(chartData);
-
-        d3plus.viz()
-            .container("#pie-chart-insertions")
-            .data(chartData)
-            .type("pie")
-            .id("name")
-            .size("value")
-            .draw();
     }
 
     function gatherAuthors(intervals, path) {
@@ -74,6 +59,8 @@ function NodeGitInspector() {
 
         renderHtml(intervals[0].gitinspector.repository);
         var chartData = [];
+        var chartData2 = [];
+        var chartData3 = [];
         var authors = gatherAuthors(intervals, 'changes');
 
         console.log(authors);
@@ -95,15 +82,32 @@ function NodeGitInspector() {
                             month: interval.date
                         });
 
+                        chartData2.push({
+                            name: authorName,
+                            value: author.deletions,
+                            month: interval.date
+                        });
+
+                        chartData3.push({
+                            name: authorName,
+                            value: author.insertions + author.deletions,
+                            month: interval.date
+                        });
+
+
                         continue loop1;
                     }
                 }
 
-                chartData.push({
+                var empty = {
                     name: authorName,
                     value: 0,
                     month: interval.date
-                });
+                };
+
+                chartData.push(empty);
+                chartData2.push(empty);
+                chartData3.push(empty);
             }
         });
 
@@ -119,29 +123,37 @@ function NodeGitInspector() {
             .x("month")
             .time("MonthSmall")
             .draw();
+
+        d3plus.viz()
+            .container("#stacked2")
+            .data(chartData2)
+            .type("stacked")
+            .id("name")
+            .text("name")
+            .y("value")
+            .x("month")
+            .time("MonthSmall")
+            .draw();
+
+        d3plus.viz()
+            .container("#stacked3")
+            .data(chartData3)
+            .type("stacked")
+            .id("name")
+            .text("name")
+            .y("value")
+            .x("month")
+            .time("MonthSmall")
+            .draw();
     }
 
-    function loadSingleData(project, fileTypes, since, until, sucessFn) {
-        $.ajax({
-            url: '/single?project=' + project +
-            '&fileTypes=' + fileTypes +
-            '&since=' + since +
-            '&until=' + until,
-            timeout: 0,
-            cache: false,
-            success: sucessFn,
-            error: function(data) {
-
-            }
-        });
-    };
-
-    function loadSingleInterval(project, fileTypes, start, end, gatherer) {
+    function loadSingleInterval(project, fileTypes, start, end, gatherer, authorFilter) {
         $.ajax({
             url: '/single?project=' + project +
             '&fileTypes=' + fileTypes +
             '&since=' + start +
-            '&until=' + end,
+            '&until=' + end +
+            '&authorfilter=' + authorFilter,
             cache: false,
             success: function(data) {
                 if (data.gitinspector.exception) {
@@ -160,7 +172,7 @@ function NodeGitInspector() {
         });
     };
 
-    function loadIntervalData(project, fileTypes, since, until) {
+    function loadIntervalData(project, fileTypes, since, until, authorFilter) {
         var start = moment(since).startOf('month');
         var end = moment(until).endOf('month');
         var intervals = [];
@@ -181,13 +193,11 @@ function NodeGitInspector() {
         var dataGatherer = new DataGatherer(intervals.length, drawStacked);
 
         intervals.forEach(function(interval) {
-            loadSingleInterval(project, fileTypes, interval.start, interval.end, dataGatherer);
+            loadSingleInterval(project, fileTypes, interval.start, interval.end, dataGatherer, authorFilter);
         });
     }
 
     this.loadIntervalData = loadIntervalData;
-    this.loadSingleData = loadSingleData;
-    this.drawPie = drawPie;
 }
 
 function DataGatherer(numberOfIntervals, sucessFn) {

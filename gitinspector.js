@@ -26,7 +26,12 @@ var create = function(parameters, serverResponse) {
         if (parameters.until) {
             options.args.push('--until=' + parameters.until);
         }
-        let fileName = 'projects/' + parameters.projectName + '/' + parameters.since + '.json';
+
+        let dirName = 'projects/' + parameters.projectName + '/';
+
+        checkDirectorySync(dirName);
+
+        let fileName = dirName + parameters.since + '.json';
 
         var start = new Date();
 
@@ -85,6 +90,14 @@ var create = function(parameters, serverResponse) {
         }
 
         options.args.push('--file-types=' + parameters.fileTypes);
+    }
+
+    function checkDirectorySync(directory) {
+        try {
+            fs.statSync(directory);
+        } catch(e) {
+            fs.mkdirSync(directory);
+        }
     }
 
     this.run = run;
