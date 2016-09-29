@@ -66,6 +66,6 @@
     "while",
     "catch"
   ],
-  "validateIndentation": 4,
+  "validateIndentation": 2,
   "validateQuoteMarks": "'"
 }

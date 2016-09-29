@@ -1,0 +1,12 @@
+.pie-chart {
+  height: 300px;
+  width: 300px;
+}
+#stacked,
+#stacked2,
+#stacked3 {
+  height: 900px;
+}
+h4 {
+  margin-bottom: 0;
+}
