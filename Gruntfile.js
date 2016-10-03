@@ -9,7 +9,7 @@ module.exports = function (grunt) {
           optimization: 2
         },
         files: {
-          'public/css/node-inspector.css': 'src/less/main.less'
+          'public/css/node-gitinspector.css': 'src/less/main.less'
         }
       }
     },

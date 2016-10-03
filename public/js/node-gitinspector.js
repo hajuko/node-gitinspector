@@ -1,174 +1,225 @@
 'use strict';
 
-var nodeGitInspector;
-var project = 'portal';
-var contentTemplate;
-var failTemplate;
-
 $(function () {
-  contentTemplate = $('#page-content').html();
-  failTemplate = $('#page-content-failed').html();
+  var graphContainer = $('#page-graph').html();
+  var dateFormat = 'YYYY-MM-DD';
+  var project = 'portal';
+  var cacheKey = 'gitData';
+  var fileTypes = '';
+  var fieldSelection;
+  var fields = ['insertions', 'deletions', 'changes', 'commits'];
+  var gitData;
+  loadCache();
+  renderNavigations();
+  update();
 
-  $('#update').click(function () {
-    $.ajax({
-      url: '/delete?project=' + project
-    });
+  function update() {
+    var field = fieldSelection.val();
+    var from = moment($('#startdate').val(), dateFormat);
+    var until = moment($('#enddate').val(), dateFormat);
+    var result = [];
 
-    nodeGitInspector = new NodeGitInspector();
-    nodeGitInspector.loadIntervalData(project, '', '2016-01-01', '2016-09-01');
-  });
+    console.log(gitData.data);
 
-  nodeGitInspector = new NodeGitInspector();
-  nodeGitInspector.loadIntervalData(project, '', '2016-01-01', '2016-09-01', '');
-});
-
-function NodeGitInspector() {
-  function renderHtml(repositoryName) {
-    var templateOptions = {
-      headline: repositoryName
-    };
-
-    $('#graph-container').html(_.template(contentTemplate)(templateOptions));
-  }
-
-  function renderFailed(repositoryName) {
-    $('#graph-container').html(_.template(failTemplate)({ headline: repositoryName }));
-  }
-
-  function gatherAuthors(intervals, path) {
-    var _authors = {};
-
-    intervals.forEach(function (interval) {
-      var authors = interval.gitinspector[path].authors;
-      authors.forEach(function (author) {
-        return _authors[author.name] = author.name;
+    $.each(gitData.data, function (i, group) {
+      $.each(group, function (j, entry) {
+        result.push(entry);
       });
     });
 
-    return _authors;
+    result = result.filter(function (entry) {
+      return checkedAuthors().indexOf(entry.name) != -1;
+    }).filter(function (entry) {
+      var date = moment(entry.date);
+      return date >= from && date <= until;
+    }).sort(function (entryA, entryB) {
+      return moment(entryA.date) - moment(entryB.date);
+    });
+
+    drawGraph(result, field);
   }
 
-  function drawStacked(intervals) {
-    if (intervals.length === 0) {
-      return renderFailed();
-    }
-
-    renderHtml(intervals[0].gitinspector.repository);
+  function drawGraph(data, field) {
+    renderGraphContainer(field);
     var chartData = [];
-    var chartData2 = [];
-    var chartData3 = [];
-    var authors = gatherAuthors(intervals, 'changes');
 
-    console.log(authors);
-
-    intervals.forEach(function (interval) {
-      var changes = interval.gitinspector.changes.authors;
-
-      loop1: for (var i = 0, len = Object.keys(authors).length; i < len; i++) {
-        var authorName = authors[Object.keys(authors)[i]];
-
-        for (var j = 0, len2 = changes.length; j < len2; j++) {
-          var author = changes[j];
-
-          if (author.name == authorName) {
-            chartData.push({
-              name: authorName, value: author.insertions, month: interval.date
-            });
-
-            chartData2.push({
-              name: authorName, value: author.deletions, month: interval.date
-            });
-
-            chartData3.push({
-              name: authorName, value: author.insertions + author.deletions, month: interval.date
-            });
-
-            continue loop1;
-          }
-        }
-
-        var empty = {
-          name: authorName, value: 0, month: interval.date
-        };
-
-        chartData.push(empty);
-        chartData2.push(empty);
-        chartData3.push(empty);
-      }
+    data.forEach(function (author) {
+      var obj = {
+        name: author.name,
+        month: author.date
+      };
+      obj[field] = author[field];
+      chartData.push(obj);
     });
 
-    console.log(chartData);
-
-    d3plus.viz().container("#stacked").data(chartData).type("stacked").id("name").text("name").y("value").x("month").time("MonthSmall").draw();
-
-    d3plus.viz().container("#stacked2").data(chartData2).type("stacked").id("name").text("name").y("value").x("month").time("MonthSmall").draw();
-
-    d3plus.viz().container("#stacked3").data(chartData3).type("stacked").id("name").text("name").y("value").x("month").time("MonthSmall").draw();
+    d3plus.viz().container('#' + field).data(chartData).type('stacked').id('name').text('name').y(field).x('month').draw();
   }
 
-  function loadSingleInterval(project, fileTypes, start, end, gatherer, authorFilter) {
-    $.ajax({
-      url: '/single?project=' + project + '&fileTypes=' + fileTypes + '&since=' + start + '&until=' + end + '&authorfilter=' + authorFilter, cache: false, success: function success(data) {
+  function loadSingleInterval(start, end) {
+    return $.ajax({
+      url: '/single?project=' + project + '&fileTypes=' + fileTypes + '&since=' + start + '&until=' + end,
+      cache: false,
+      success: function success(data) {
         if (data.gitinspector.exception) {
-          console.log('failed: ' + end);
+          console.log('failed: ' + start);
+          console.log(data);
 
-          return gatherer.failed();
+          return;
         }
 
-        console.log('success: ' + end);
-
-        gatherer.addData(data);
-      }, error: function error() {
-        gatherer.failed();
+        saveData(data);
+        updateCache();
+        removeSpinner(start);
+      },
+      error: function error(err) {
+        return console.log(err);
       }
     });
   }
 
-  function loadIntervalData(project, fileTypes, since, until, authorFilter) {
-    var start = moment(since).startOf('month');
-    var end = moment(until).endOf('month');
-    var intervals = [];
+  function createTimeInterval(since, until) {
+    var start = moment(since, dateFormat).startOf('month');
+    var end = moment(until, dateFormat).startOf('month');
     var currentDate = start;
+    var intervals = [];
 
     while (currentDate <= end) {
       currentDate.startOf('month');
-
-      intervals.push({
-        start: currentDate.format('YYYY-MM-DD'),
-        end: currentDate.endOf('month').format('YYYY-MM-DD')
-      });
-
-      currentDate.add(1, 'd');
+      intervals.push(currentDate.format(dateFormat));
+      currentDate.add(1, 'months');
     }
-    console.log('intervals: ' + intervals.length);
 
-    var dataGatherer = new DataGatherer(intervals.length, drawStacked);
+    return intervals;
+  }
 
+  function loadIntervalData(since, until) {
+    var calls = [];
+    var intervals = createTimeInterval(since, until);
+
+    $('#graph-container').html('<h4>Loading Data..</h4>');
     intervals.forEach(function (interval) {
-      loadSingleInterval(project, fileTypes, interval.start, interval.end, dataGatherer, authorFilter);
+      calls.push(loadSingleInterval(interval, moment(interval, dateFormat).endOf('month').format(dateFormat)));
+
+      addSpinner(interval);
+    });
+
+    $.when.apply($, calls).done(function () {
+      console.log('new data loaded');
+      renderNavigations();
+      update();
     });
   }
 
-  this.loadIntervalData = loadIntervalData;
-}
+  function saveData(data) {
+    var date = data.date;
+    gitData.data[date] = {};
 
-function DataGatherer(numberOfIntervals, sucessFn) {
-  var intervalls = [];
+    data.gitinspector.blame.authors.forEach(function (blameByAuthor, i) {
+      var changesByAuthor = data.gitinspector.changes.authors[i];
+      var author = {
+        name: changesByAuthor.name,
+        date: date,
+        insertions: changesByAuthor.insertions,
+        deletions: changesByAuthor.deletions,
+        changes: changesByAuthor.insertions + changesByAuthor.deletions,
+        commits: changesByAuthor.commits,
+        percentageOfChanges: changesByAuthor.percentage_of_changes,
+        percentageInComments: blameByAuthor.percentage_in_comments,
+        rows: blameByAuthor.rows,
+        stability: blameByAuthor.stability
+      };
 
-  this.addData = function (data) {
-    intervalls.push(data);
-    numberOfIntervals--;
+      gitData.data[date][author.name] = author;
+      gitData.authors[author.name] = {
+        name: author.name,
+        email: author.email,
+        icon: author.icon
+      };
+    });
 
-    if (numberOfIntervals == 0) {
-      sucessFn(intervalls);
-    }
-  };
+    $.each(gitData.authors, function (i, author) {
+      if (!gitData.data[date][author.name]) {
+        console.log(author.name);
+        console.log(data);
 
-  this.failed = function () {
-    numberOfIntervals--;
+        gitData.data[date][author.name] = {
+          name: author.name,
+          date: date,
+          insertions: 0,
+          deletions: 0,
+          changes: 0,
+          commits: 0,
+          percentageOfChanges: 0,
+          percentageInComments: 0,
+          rows: 0,
+          stability: 0
+        };
+      };
+    });
+  }
 
-    if (numberOfIntervals == 0) {
-      sucessFn(intervalls);
-    }
-  };
-}
+  function loadCache() {
+    gitData = JSON.parse(localStorage.getItem(cacheKey)) || { data: {}, authors: {} };
+    console.log('loading cache');
+    console.log(gitData);
+  }
+
+  function updateCache() {
+    localStorage.setItem(cacheKey, JSON.stringify(gitData));
+  }
+
+  function renderNavigations() {
+    var startDate = gitData.startDate || '2016-01-01';
+    var endDate = gitData.endDate || '2016-02-01';
+    $('#navigation').html(_.template($('#template-navigation').html())({ fields: fields }));
+    $('#sidebar').html(_.template($('#template-sidebar').html())({
+      authors: gitData.authors,
+      startDate: startDate,
+      endDate: endDate
+    }));
+
+    fieldSelection = $('#field-selection');
+    fieldSelection.on('change', update);
+    $('#update-button').on('click', function () {
+      update();
+      saveSettings();
+      $('#sidebar').removeClass('is-visible');
+      $('.mdl-layout__obfuscator').removeClass('is-visible');
+    });
+
+    $('#load-data-button').on('click', function () {
+      loadIntervalData($('#startdate').val(), $('#enddate').val());
+      saveSettings();
+    });
+
+    componentHandler.upgradeDom();
+  }
+
+  function checkedAuthors() {
+    var authors = [];
+    $('.author-checkbox:checked').each(function () {
+      authors.push($(this).val());
+    });
+
+    return authors;
+  }
+
+  function renderGraphContainer(field) {
+    $('#graph-container').html(_.template(graphContainer)({ field: field }));
+  }
+
+  function addSpinner(date) {
+    $('#graph-container').append(_.template($('#template-spinner').html())({ date: date }));
+    componentHandler.upgradeDom();
+  }
+
+  function removeSpinner(date) {
+    $('#spinner-' + date).remove();
+  }
+
+  function saveSettings() {
+    gitData.startDate = $('#startdate').val();
+    gitData.endDate = $('#enddate').val();
+    updateCache();
+  }
+});

@@ -1,41 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Node Gitinspector</title>
-    <link rel="stylesheet" href="/public/css/node-inspector.css"/>
+  <meta charset="UTF-8">
+  <title>Node Gitinspector</title>
+  <link rel="stylesheet" href="css/node-gitinspector.css"/>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+        rel="stylesheet">
+  <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Roboto:300,400,500,700" type="text/css">
+  <link rel="stylesheet" href="https://code.getmdl.io/1.2.1/material.indigo-pink.min.css">
+  <script defer src="https://code.getmdl.io/1.2.1/material.min.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.12.0/lodash.min.js"></script>
+  <script src="http://www.d3plus.org/js/d3.js"></script>
+  <script src="http://www.d3plus.org/js/d3plus.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
+  <script src="js/node-gitinspector.js"></script>
 
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.12.0/lodash.min.js"></script>
-    <script src="http://www.d3plus.org/js/d3.js"></script>
-    <script src="http://www.d3plus.org/js/d3plus.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
-    <script src="/public/js/node-gitinspector.js"></script>
+  <script type="text/template" id="page-graph">
+    <h4><%= field %></h4>
+    <div id="<%= field %>" class="graph"></div>
+  </script>
 
-    <script type="text/template" id="page-content">
-        <h4>Insertions</h4>
-        <div id="stacked"></div>
-
-        <h4>Deletions</h4>
-        <div id="stacked2"></div>
-
-        <h4>Insertions + Deletions</h4>
-        <div id="stacked3"></div>
+  <script type="text/template" id="template-spinner">
+    <div class="spinner" id="spinner-<%= date %>">
+      <span><%= date %></span>
+      <div class="mdl-progress mdl-js-progress mdl-progress__indeterminate"></div>
+    </div>
     </script>
 
-    <script type="text/template" id="page-content-failed">
-        <h1>
-            Failed
-        </h1>
+  <script type="text/template" id="template-navigation">
+    <select id="field-selection">
+      <% _.each(fields, function(field) { %>
+        <option value="<%= field %>"><%= field %></option>
+      <% }) %>
+    </select>
+  </script>
 
-        <p>No data found for given date and files</p>
+  <script type="text/template" id="template-sidebar">
 
-    </script>
+    <div class="mdl-textfield mdl-js-textfield datepicker mdl-textfield--floating-label">
+      <input class="mdl-textfield__input" type="text" id="startdate" value="<%= startDate %>">
+      <label class="mdl-textfield__label" for="startdate">start date</label>
+    </div>
+
+    <div class="mdl-textfield mdl-js-textfield datepicker mdl-textfield--floating-label">
+      <input class="mdl-textfield__input" type="text" id="enddate" value="<%= endDate %>">
+      <label class="mdl-textfield__label" for="enddate">end date</label>
+    </div>
+
+    <button id="update-button" class="mdl-button mdl-js-button mdl-js-ripple-effect">
+      apply filter
+    </button>
+
+    <button id="load-data-button" class="mdl-button mdl-js-button mdl-js-ripple-effect">
+      load data
+    </button>
+
+    <ul class="mdl-list">
+    <% _.each(authors, function(author, i) { %>
+      <li class="mdl-list__item">
+        <span class="mdl-list__item-primary-content">
+          <%= author.name %>
+        </span
+        <span class="mdl-list__item-secondary-action">
+          <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="list-checkbox-<%= i %>">
+            <input type="checkbox" id="list-checkbox-<%= i %>" class="mdl-checkbox__input author-checkbox " checked value="<%= author.name %>"/>
+          </label>
+      </span>
+      </li>
+    <% }) %>
+      </ul>
+
+
+  </script>
 
 </head>
 <body>
-<button id="update">update</button>
-<input id="authorfilter">
-<div id="graph-container"></div>
+
+<div class="mdl-layout mdl-js-layout mdl-layout--fixed-drawer
+            mdl-layout--fixed-header">
+  <header class="mdl-layout__header">
+    <div class="mdl-layout__header-row">
+      <div id="navigation"></div>
+    </div>
+  </header>
+  <div class="mdl-layout__drawer" id="sidebar">
+    <span class="mdl-layout-title">Title</span>
+    <nav class="mdl-navigation">
+      <a class="mdl-navigation__link" href="">Link</a>
+      <a class="mdl-navigation__link" href="">Link</a>
+      <a class="mdl-navigation__link" href="">Link</a>
+      <a class="mdl-navigation__link" href="">Link</a>
+    </nav>
+  </div>
+  <main class="mdl-layout__content">
+    <div class="page-content">
+      <div id="graph-container"></div>
+    </div>
+  </main>
+</div>
 </body>
 </html>

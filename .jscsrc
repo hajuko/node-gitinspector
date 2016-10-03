@@ -1,7 +1,6 @@
 {
   "disallowEmptyBlocks": true,
   "disallowKeywordsOnNewLine": ["else"],
-  "disallowMultipleLineBreaks": true,
   "disallowSpaceBeforePostfixUnaryOperators": [
     "++",
     "--"
@@ -15,9 +14,8 @@
   "requireCapitalizedComments": true,
   "requireCapitalizedConstructors": true,
   "requireCommaBeforeLineBreak": true,
-  "requireLineBreakAfterVariableAssignment": true,
   "requireLineFeedAtFileEnd": true,
-  "maximumLineLength": 80,
+  "maximumLineLength": 100,
   "requireCurlyBraces": [
     "if",
     "else",

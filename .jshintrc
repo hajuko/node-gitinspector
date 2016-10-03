@@ -14,8 +14,15 @@
     "browser": true,
     "devel": true,
     "jquery": true,
+    "esnext": true,
+    "esversion": 6,
+    "node": true,
 
     "globals" :  {
+        "self": true,
+        "cache": true,
+        "JSON": true,
+        "moment": true,
         "exports": true,
         "require": true,
         "process": true,
