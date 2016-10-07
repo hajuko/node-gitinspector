@@ -7,7 +7,7 @@ $(function () {
   var cacheKey = 'gitData';
   var fileTypes = '';
   var fieldSelection;
-  var fields = ['insertions', 'deletions', 'changes', 'commits'];
+  var fields = ['insertions', 'deletions', 'changes', 'commits', 'percentageOfChanges'];
   var gitData;
   loadCache();
   renderNavigations();
@@ -52,9 +52,40 @@ $(function () {
       chartData.push(obj);
     });
 
-    d3plus.viz().container('#' + field).data(chartData).type('stacked').id('name').text('name').y(field).x('month').draw();
+    d3plus.viz().container('#' + field + '-stacked').data(chartData).type('stacked').id('name').text('name').y(field).x('month').draw();
+    //d3plus.viz().container('#' + field + '-stacked-bar').data(chartData).type('bar').id('name').y('month')
+    //    .x({'stacked': true, 'value': field}).time('month').draw();
+
+    var groupedData = groupByAuthor(chartData, field);
+
+    console.log(groupedData);
+
+    d3plus.viz().container('#' + field + '-pie').data(groupedData).type('pie').id('name').size(field).draw();
   }
 
+  function groupByAuthor(data, field) {
+    var result = [];
+
+    $.each(gitData.authors, function (author) {
+      var _author;
+
+      data.forEach(function (entry) {
+        if (author == entry.name) {
+          if (!_author) {
+            _author = $.extend({}, entry);
+
+            return;
+          }
+
+          _author[field] += entry[field];
+        }
+      });
+      result.push(_author);
+      _author = null;
+    });
+
+    return result;
+  }
   function loadSingleInterval(start, end) {
     return $.ajax({
       url: '/single?project=' + project + '&fileTypes=' + fileTypes + '&since=' + start + '&until=' + end,
