@@ -3,7 +3,13 @@ const app = express();
 const port = 1337;
 const Gitinspector = require('./gitinspector');
 
+
 app.use(express.static(__dirname + '/public'));
+
+
+app.get('/codelines', function(req, res) {
+
+});
 
 app.get('/single', function (req, res) {
   const projectConfig = req.param('project');
@@ -23,3 +29,4 @@ app.get('/single', function (req, res) {
 app.listen(port);
 console.log('Api started at port: ' + port);
 module.exports = app;
+

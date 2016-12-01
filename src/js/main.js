@@ -16,13 +16,24 @@ $(function () {
     var from = moment($('#startdate').val(), dateFormat);
     var until = moment($('#enddate').val(), dateFormat);
     var result = [];
+    var lines = [];
 
-    console.log(gitData.data);
-
-    $.each(gitData.data, (i, group) => {
-      $.each(group, (j, entry) => {
+    $.each(gitData.data, (i, date) => {
+      lines.push({
+        date: i,
+        lines: date.lines
+      });
+      $.each(date.authors, (j, entry) => {
         result.push(entry);
       });
+    });
+
+
+    lines = lines.filter(line => {
+      var date =  moment(line.date);
+      return date >= from && date <= until;
+    }).sort((lineA, lineB) => {
+      return moment(lineA.date) - moment(lineB.date);
     });
 
     result = result.filter(entry => {
@@ -34,7 +45,10 @@ $(function () {
       return moment(entryA.date) - moment(entryB.date);
     });
 
+    console.log(lines);
+
     drawGraph(result, field);
+    drawLines(lines);
   }
 
   function drawGraph(data, field) {
@@ -50,22 +64,56 @@ $(function () {
       chartData.push(obj);
     });
 
-    d3plus.viz().container('#' + field + '-stacked').data(chartData).type('stacked').id('name').text('name').y(field).x(
-        'month').draw();
-    //d3plus.viz().container('#' + field + '-stacked-bar').data(chartData).type('bar').id('name').y('month')
-    //    .x({'stacked': true, 'value': field}).time('month').draw();
+    console.log(chartData);
+
+    d3plus.viz().container('#' + field + '-stacked')
+        .data(chartData)
+        .type('stacked')
+        .id('name')
+        .text('name')
+        .y(field)
+        .x('month')
+        .draw();
 
     var groupedData = groupByAuthor(chartData, field);
 
     console.log(groupedData);
 
+    //d3plus.viz()
+    //    .container('#' + field + '-pie')
+    //    .data(groupedData)
+    //    .type('pie')
+    //    .id('name')
+    //    .size(field)
+    //    .draw()
+  }
+
+  function drawLines(lines) {
+    var dates = [];
+
+    $.each(lines, function (key, date) {
+      $.each(date.lines, function(file, value) {
+        if (file == 'SUM') {
+          return;
+        }
+
+        dates.push({
+          file: file, value: value.code, month: date.date
+        });
+      });
+    });
+
+    console.log(dates);
+
     d3plus.viz()
-        .container('#' + field + '-pie')
-        .data(groupedData)
-        .type('pie')
-        .id('name')
-        .size(field)
-        .draw()
+        .container('#lines')
+        .data(dates)
+        .type('stacked')
+        .id('file')
+        .text('file')
+        .y('value')
+        .x('month')
+        .draw();
   }
 
   function groupByAuthor(data, field) {
@@ -150,7 +198,12 @@ $(function () {
 
   function saveData(data) {
     var date = data.date;
-    gitData.data[date] = {};
+    gitData.data[date] = {
+        authors: {},
+        lines: data.lines
+    };
+
+    console.log(data);
 
     data.gitinspector.blame.authors.forEach((blameByAuthor, i) => {
       var changesByAuthor = data.gitinspector.changes.authors[i];
@@ -167,7 +220,9 @@ $(function () {
         stability: blameByAuthor.stability
       };
 
-      gitData.data[date][author.name] = author;
+      console.log(gitData.data[date].authors);
+
+      gitData.data[date].authors[author.name] = author;
       gitData.authors[author.name] = {
         name: author.name,
         email: author.email,
@@ -176,11 +231,8 @@ $(function () {
     });
 
     $.each(gitData.authors, (i, author) => {
-      if (!gitData.data[date][author.name]) {
-        console.log(author.name);
-        console.log(data);
-
-        gitData.data[date][author.name] = {
+      if (!gitData.data[date].authors[author.name]) {
+        gitData.data[date].authors[author.name] = {
           name: author.name,
           date: date,
           insertions: 0,
@@ -194,6 +246,8 @@ $(function () {
         }
       };
     });
+
+    console.log(gitData);
   }
 
   function loadCache() {

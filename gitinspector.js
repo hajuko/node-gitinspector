@@ -1,8 +1,11 @@
 const PythonShell = require('python-shell');
 const fs = require('fs');
+const util = require('util');
+const exec = require('child_process').exec;
 
 var create = function (parameters, serverResponse) {
   function run() {
+    let gitLines;
     const options = {
       scriptPath: parameters.gitinspectorPath,
       args: [parameters.projectPath,
@@ -57,15 +60,21 @@ var create = function (parameters, serverResponse) {
       var duration = new Date() - start;
       console.log('>>>> finished in: ' + duration + ' ms <<<<');
 
-      fs.writeFile(fileName, JSON.stringify(result), function (err) {
-        if (err) {
-          return console.log(err);
-        }
 
-        console.log('The file was saved! ' + fileName);
+      return exec(createCmd(date), function(error, stdout, stderr) {
+        result.lines = JSON.parse(stdout);
+
+        fs.writeFile(fileName, JSON.stringify(result), function (err) {
+          if (err) {
+            return console.log(err);
+          }
+          console.log('The file was saved! ' + fileName);
+
+          exec('cd /home/julien/Documents/rx.portal && git checkout dev', function(a, b, c) {
+            return serverResponse.send(result);
+          });
+        });
       });
-
-      return serverResponse.send(result);
     });
   }
 
@@ -95,6 +104,10 @@ var create = function (parameters, serverResponse) {
     } catch (e) {
       fs.mkdirSync(directory);
     }
+  }
+
+  function createCmd(date) {
+    return 'cd /home/julien/Documents/rx.portal && git checkout `git rev-list -n 1 --before="' + date + '" dev` && cloc --vcs=git --json';
   }
 
   this.run = run;

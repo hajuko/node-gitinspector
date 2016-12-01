@@ -19,7 +19,7 @@
   <script type="text/template" id="page-graph">
     <div id="<%= field %>-stacked" class="graph"></div>
     <!--<div id="<%= field %>-stacked-bar" class="graph"></div>-->
-    <div id="<%= field %>-pie" class="graph"></div>
+    <!--<div id="<%= field %>-pie" class="graph"></div>-->
   </script>
 
   <script type="text/template" id="template-spinner">
@@ -78,8 +78,7 @@
 </head>
 <body>
 
-<div class="mdl-layout mdl-js-layout mdl-layout--fixed-drawer
-            mdl-layout--fixed-header">
+<div class="mdl-layout mdl-js-layout mdl-layout--fixed-drawer mdl-layout--fixed-header">
   <header class="mdl-layout__header">
     <div class="mdl-layout__header-row">
       <div id="navigation"></div>
@@ -97,6 +96,7 @@
   <main class="mdl-layout__content">
     <div class="page-content">
       <div id="graph-container"></div>
+      <div id="lines"></div>
     </div>
   </main>
 </div>
