@@ -61,8 +61,14 @@ var create = function (parameters, serverResponse) {
       console.log('>>>> finished in: ' + duration + ' ms <<<<');
 
 
-      return exec(createCmd(date), function(error, stdout, stderr) {
+      let cmd = createCmd(date);
+      console.log(cmd);
+      return exec(cmd, function(error, stdout, stderr) {
+        console.log(stdout);
+
         result.lines = JSON.parse(stdout);
+
+
 
         fs.writeFile(fileName, JSON.stringify(result), function (err) {
           if (err) {
@@ -107,7 +113,7 @@ var create = function (parameters, serverResponse) {
   }
 
   function createCmd(date) {
-    return 'cd /home/julien/Documents/rx.portal && git checkout `git rev-list -n 1 --before="' + date + '" dev` && cloc --vcs=git --json';
+    return 'cd /home/julien/Documents/rx.portal/src && git checkout `git rev-list -n 1 --before="' + date + '" dev` && cloc --vcs=git --json';
   }
 
   this.run = run;
